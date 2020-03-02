@@ -1,40 +1,112 @@
 const express = require("express");
-const cors = require("cors");
-const app = express();
-const port = 2000;
-app.use(express.json());
-app.use(cors());
-
-const cartRoutes = require("./routes.js");
-// tell the server to use our foodzRoutes/ make our endpoints available on this server
-app.use("/", cartRoutes);
-
-//endpoints
-// send a simple response as a text
-app.get("/", (request, response) => {
-  response.send("hello, world.");
-});
-//send HTML via GET request
-app.get("/lorem", (request, response) => {
-  response.send(`
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse maximus nulla blandit, faucibus nibh in, auctor dui. Quisque sodales velit augue, quis commodo nibh aliquet et. Fusce dignissim finibus lectus, eget bibendum ligula imperdiet non. Aenean at mauris placerat, maximus ipsum eget, pulvinar ante. Curabitur mollis, lorem eu tempor imperdiet, augue ligula elementum massa, eu vehicula dolor dolor mollis arcu. Maecenas ullamcorper dui elit, nec cursus turpis hendrerit id. Vivamus eu ornare lectus, quis varius lorem. Aenean eros ex, porta ut arcu ac, tincidunt scelerisque felis. Ut eget quam in ante tristique bibendum facilisis sed lectus. Sed rutrum suscipit mi, quis vehicula tellus tincidunt quis. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-    `);
-});
-
-const aboutMe = {
-  firstName: "Andre",
-  lastName: "Jackson",
-  profession: "Web Developer",
-  languages: {
-    programming: ["JavaScript", "HTML/CSS", "TypeScript", "Syql"],
-    spoken: ["English", "French", "Jive", "German", "Spanish"]
+const cartRoutes = express.Router();
+const cart = [
+  {
+    id: 0,
+    price: 9,
+    product: "vegetable",
+    quantity: 5
+  },
+  {
+    id: 1,
+    price: 60,
+    product: "doorbell",
+    quantity: 4
+  },
+  {
+    id: 2,
+    price: 25,
+    product: "bagel",
+    quantity: 6
+  },
+  {
+    id: 3,
+    price: 80,
+    product: "shoes",
+    quantity: 7
   }
-};
-// send JSON
-app.get("/about", (request, response) => {
-  response.json(aboutMe);
+];
+
+let nextId = cart.length;
+
+//create an endopoint that responds to a request with the full array of food.
+
+cartRoutes.get("/cart", (request, response) => {
+  response.status(200);
+  response.json(cart);
+});
+// create an endpoint that gets food by id
+cartRoutes.get("/cart/:id", (request, response) => {
+  //   //save the id parameter as a number
+  let id = parseInt(request.params.id);
+  //   //find the object by id
+  //   //using a forEach loop
+  //   //   let foundFood = {};
+  //   //   foodz.forEach(food => {
+  //   //     if (id === food.id) {
+  //   //       foundFood = food;
+  //   //     }
+  //  });
+
+  let foundItem = cart.find(item => item.id === id);
+  if (foundItem) {
+    response.json(foundItem);
+  } else {
+    response.status(404);
+    response.send(` ID: ${id} not found`);
+  }
 });
 
-app.listen(port, () => {
-  console.log(`listening on port : ${port}`);
+// //create an endpoint for POST of foodz
+
+cartRoutes.post("/cart", (request, response) => {
+  let newCart = request.body;
+  //add the next id to the newCart
+  newCart.id = nextId;
+  //increment nextId
+  nextId++;
+  //add food to the foodz array
+  cart.push(newCart);
+  response.status(201);
+  response.json(cart);
 });
+
+//create an endpoint for PUT of foodz (update foodz)
+cartRoutes.put("/cart/:id", (request, response) => {
+  //get the id parameter
+  let id = parseInt(request.params.id);
+  // create an object from teh body of the element
+  let updatedCart = request.body;
+  //add the id property to the updatedCart
+  updatedCart.id = nextId;
+  //increment our nextId variable
+  nextId++;
+  //find the food
+  let foundIndex = cart.findIndex(cart => cart.id === id);
+  if (foundIndex > -1) {
+    //remove the old food and add the updated food
+    cart.splice(foundIndex, 1, updatedCart);
+    response.json(cart);
+  } else {
+    response.status(404);
+    response.send(`There's no item by id: ${id}`);
+  }
+});
+
+// create an endpoint for the DELETE of foodz
+cartRoutes.delete("/cart/:id", (request, response) => {
+  // get the id parameter
+  let id = parseInt(request.params.id);
+  // find the food's index
+  let index = cart.findIndex(cart => cart.id === id);
+  if (index >= 0) {
+    //delete this food
+    cart.splice(index, 1);
+    response.sendStatus(204);
+  } else {
+    response.status(404);
+    response.send(`There's no item by id: ${id}`);
+  }
+});
+
+module.exports = { cartRoutes };
